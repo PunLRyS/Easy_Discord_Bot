@@ -1,6 +1,21 @@
 from discord.ext import commands
+import discord
+import openai
+import os
+import random
 
 def setup(bot):
+    @bot.event
+    async def on_member_join(member):
+        await member.add_roles()
+
+    @bot.event
+    async def on_member_join(member):
+        channel = bot.get_channel()
+        await channel.send(f'{member} wellcome!')
+
+
+
     @bot.command()
     async def ask(ctx, *, question):
         response = openai.ChatCompletion.create(
@@ -42,7 +57,19 @@ def setup(bot):
         await ctx.send(f'Để chơi game minesweeper, sử dụng lệnh !ms "số ô" "số bom" để tạo bàn chơi và !p "dòng" "cột" để mở ô.')
         await ctx.send(f'Để chơi game blackjack, sử dụng lệnh !blackjack')
 
+    banned_words = [] 
 
+    @bot.event
+    async def on_message(message):
+        if message.author == bot.user:
+            return
+
+        if any(banned_word in message.content.lower() for banned_word in banned_words):
+            await message.delete()
+            await message.channel.send(f"{message.author.mention}, cảnh cáo! Đừng nói tục chửi bậy.")
+            return
+
+        await bot.process_commands(message)
 
     @bot.command(name='blackjack')
     async def blackjack(ctx):
@@ -124,6 +151,21 @@ def setup(bot):
         board_str = '\n'.join(' '.join(row) for row in revealed)
         await ctx.send(f'```{board_str}```')
 
+    @bot.command()
+    async def ttt(ctx, pos: int):
+        global player
+        if board[pos - 1] == ' ':
+            board[pos - 1] = player
+            winner = check_winner()
+            if winner:
+                await ctx.send(f'Board:\n{print_board()}\nWinner: {ctx.author.name}')
+                board[:] = [' ' for _ in range(9)]
+            else:
+                player = 'O' if player == 'X' else 'X'
+                await ctx.send(f'Board:\n{print_board()}\nNext player: {player}')
+        else:
+            await ctx.send('Position already taken, try again.')
+
 
     @bot.command(name='kick')
     @commands.has_permissions(kick_members=True)
@@ -165,3 +207,4 @@ def setup(bot):
 
         await member.add_roles(mute_role)
         await ctx.send(f'{member.mention} has been muted.')
+
