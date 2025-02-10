@@ -58,10 +58,6 @@ class BlackjackView(discord.ui.View):
 
         await interaction.response.edit_message(content=display_game_state(game['player_hand'], game['dealer_hand']))
 
-        if player_value > 21:
-            await interaction.followup.send("Player busts! Dealer wins.")
-            del games[self.ctx.author.id]
-            self.stop()
 
     @discord.ui.button(label='Stand', style=discord.ButtonStyle.secondary)
     async def stand(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -78,15 +74,22 @@ class BlackjackView(discord.ui.View):
         player_value = calculate_hand_value(game['player_hand'])
         dealer_value = calculate_hand_value(game['dealer_hand'])
 
-        if dealer_value > 21 or player_value > dealer_value:
-            await interaction.followup.send("Player wins!")
+        if dealer_value > 21:
+            if player_value > 21:
+                await interaction.followup.send("Player and dealer bust! It's a tie.")
+            else:
+                await interaction.followup.send("Dealer busts! Player wins!")
         elif player_value < dealer_value:
             await interaction.followup.send("Dealer wins!")
+        elif player_value > dealer_value:
+            await interaction.followup.send("Player wins!")
         else:
             await interaction.followup.send("It's a tie!")
 
         del games[self.ctx.author.id]
         self.stop()
+
+
 
 
 # Minesweeper game
